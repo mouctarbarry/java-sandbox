@@ -4,37 +4,40 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClients;
+import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 public class GoogleMapsApiClient {
 
     public static void main(String[] args) {
         try {
-            String apiKey = "YOUR_GOOGLE_MAPS_API_KEY";
+            String endpoint = "https://maps.googleapis.com/maps/api/distancematrix/json";
             String origin = "Paris,France";
             String destination = "Berlin,Germany";
+            String apiKey = "AIzaSyBSzkf6v8bVOvIkYJvy70lg4O3sE2YI1Sw"; // Replace with your actual API key
 
-            // Encode les paramètres pour l'URL
-            origin = URLEncoder.encode(origin, "UTF-8");
-            destination = URLEncoder.encode(destination, "UTF-8");
+            // Encode the parameters for the URL
+            origin = URLEncoder.encode(origin, StandardCharsets.UTF_8);
+            destination = URLEncoder.encode(destination, StandardCharsets.UTF_8);
 
-            // Construit l'URL de l'API Google Maps Distance Matrix
-            String apiUrl = "https://maps.googleapis.com/maps/api/distancematrix/json?origins=" + origin +
-                    "&destinations=" + destination + "&key=" + apiKey;
+            // Construct the URL for the Google Maps Distance Matrix API
+            String apiUrl = String.format("%s?origins=%s&destinations=%s&key=%s", endpoint, origin, destination, apiKey);
+            System.out.println(apiUrl);
 
-            // Crée un client HTTP
+            // Create an HTTP client
             HttpClient client = HttpClients.createDefault();
 
-            // Crée une requête GET
+            // Create a GET request
             HttpGet request = new HttpGet(apiUrl);
 
-            // Exécute la requête
+            // Execute the request
             HttpResponse response = client.execute(request);
 
-            // Lit la réponse
+            // Read the response
             BufferedReader reader = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
             String line;
             StringBuilder result = new StringBuilder();
@@ -42,12 +45,26 @@ public class GoogleMapsApiClient {
                 result.append(line);
             }
 
-            // Affiche la réponse
-            System.out.println(result.toString());
+            // Parse the response to get the distance
+            JSONObject json = new JSONObject(result.toString());
+            String distance = null;
+            if (json.has("rows") && !json.getJSONArray("rows").isEmpty()) {
+                distance = json.getJSONArray("rows")
+                        .getJSONObject(0)
+                        .getJSONArray("elements")
+                        .getJSONObject(0)
+                        .getJSONObject("distance")
+                        .getString("text");
+                // Print the distance
+                System.out.println("Distance between Paris and Berlin: " + distance);
+            } else {
+                System.out.println("No distance data available.");
+            }
+            // Print the distance
+            System.out.println("Distance between Paris and Berlin: " + distance);
 
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 }
-
